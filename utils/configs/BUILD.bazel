@@ -1,0 +1,3 @@
+exports_files([
+    "front-envoy-config.yaml",
+])

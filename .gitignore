@@ -1,0 +1,4 @@
+bazel-*
+dist/
+official-envoy/
+utils/build_envoy_release_stripped/
