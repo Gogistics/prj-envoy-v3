@@ -10,12 +10,11 @@ Ref:
 - [Envoy filter example](https://github.com/envoyproxy/envoy-filter-example)
 
 ## Customize http filter (WIP)
+Now, I'm using the exmaple from Envoy official project to demo how to write and build custom Envoy filter on Mac and Ubuntu. Later, I'll come out with other use cases of custom Envoy filters. If you want to run the compiled Envoy in Docker container, I suggest writing and building Envoy filter on Linux. 
 
 ### Prerequisites for Mac Developers
-* Xcode
-* cMake
-* ninja
-* Bazel
+* App Store: Xcode
+* Homebrew: coreutils wget cmake libtool go bazel automake ninja clang-format autoconf aspell
 
 Ref:
 - [cMake](https://formulae.brew.sh/formula/cmake)
@@ -26,21 +25,39 @@ Possible issues:
 - [xcode-select active developer directory error](https://stackoverflow.com/questions/17980759/xcode-select-active-developer-directory-error)
 - [bazel "undeclared inclusion(s)" error](https://stackoverflow.com/questions/43921911/how-to-resolve-bazel-undeclared-inclusions-error)
 
-## Development Steps
 
-### Compile Envoy from strach
-1. Write Bazel files properly; read comments in the Bazel files for references. Assume that all prerequisites have been installed, the sbumodule has been added and all Bazel files are configured properly.
+### Steps of compiling Envoy with custom filter from strach
+1. Write Bazel files. Read comments in Bazel files for references. Assume that all prerequisites have been installed, the sbumodule has been added and all Bazel files are configured properly.
+
 ```sh
+# checkout submodule which is the official Envoy repository
+$ git submodule update --init --recursive
+
+# if you encounter version issue, you might need to manually checkout other stable version
+# check current tags
+$ git describe --tags
+
+# fetch all tags
+$ git fetch --tags
+
+# get latest tag name
+$ latestTag=$(git describe --tags `git rev-list --tags --max-count=1`)
+
+# checkout
+$ git checkout $latestTag
+
 # build envoy bin by Bazel
-$  bazel build //filters:envoy
+$  bazel build -c opt //filters:envoy
 ```
 
 Ref:
+- [Building Envoy with Bazel](https://github.com/envoyproxy/envoy/tree/main/bazel)
 - [Building](https://www.envoyproxy.io/docs/envoy/latest/start/building.html)
 - [Building an Envoy Docker image](envoyproxy.io/docs/envoy/latest/start/building/local_docker_build)
 - [Building Envoy with Bazel](https://github.com/envoyproxy/envoy/blob/bebd3e2c4700fb13132a34fcfa8b82b439249f3b/bazel/README.md)
 
-2. Create certs
+2. Create certs (optional)
+If you want to enable TLS, you need to generate certs before building Docker image.
 
 ```sh
 $ cd utils/
@@ -76,19 +93,21 @@ $ openssl x509 -req \
 ```
 
 3. Build container running Envoy
-Issues:
-- [envoy su-exec: envoy: Exec format error](https://discuss.istio.io/t/how-to-build-istio-proxy-image-on-mac/2104)
+If you build custom Envoy on Mac, you would get **envoy su-exec: envoy: Exec format error**.
+
+Ref:
 - [Compile Envoy on Raspberry Pi4](https://stevesloka.com/compile-envoy-on-raspberry-pi4/)
 
+Issues:
+- [su-exec: envoy: Exec format error](https://discuss.istio.io/t/how-to-build-istio-proxy-image-on-mac/2104)
 
 ```sh
-$ bazel build //filters:envoy --jobs=3 -c opt --config=remote-clang \
-    --remote_cache=grpcs://remotebuildexecution.googleapis.com \
-    --remote_executor=grpcs://remotebuildexecution.googleapis.com \
-    --remote_instance_name=projects/envoy-ci/instances/default_instance
+# build Docker image
+$ cp bazel-bin/filters/envoy utils/build_envoy_release_stripped/envoy
+$ docker build -t alantai/prj-envoy-v3:atai-envoy-v0.0.0 -f utils/dockerfiles/Dockerfile-envoy-alpine .
+$ docker scan alantai/prj-envoy-v3:atai-envoy-v0.0.0 
 
-$ bazel build //filters:envoy --jobs=3 --config=docker-clang
-# test
+# once the envoy
 $ docker run -d \
       --name atai_envoy_with_custom_filters \
       -p 80:80 -p 443:443 -p 8001:8001 \
@@ -98,20 +117,5 @@ $ docker run -d \
       --log-opt max-buffer-size=5m \
       --log-opt max-size=100m \
       --log-opt max-file=5 \
-      alantai/prj-envoy-v3/envoy:v0.0.0
-
-docker run --rm -it \
-      -v $(pwd)/utils/configs/front-envoy-config-test.yaml:/envoy-custom.yaml \
-      -p 9901:9901 \
-      -p 10000:10000 \
-      envoyproxy/envoy-dev:14a052a5dfc808a03c966365540514a98d711abc \
-          -c /envoy-custom.yaml
-
-https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3.tar.gz
-```
-
-TMP (remove later)
-```sh
-$ docker run --rm -v $(pwd):/app -w /app gcc:11 sh -c "g++ -Wall -o hello hello_world.cpp && ./hello"
-$ docker run --rm -v $(pwd):/app -w /app gcc:11 sh -c "gcc -Wall -o hello hello_world.c && ./hello"
+      alantai/prj-envoy-v3:atai-envoy-v0.0.0
 ```
