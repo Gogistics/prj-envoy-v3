@@ -3,7 +3,7 @@ Envoy is one of powerful proxies nowadays, especially popular in service mesh an
 
 - Listener Filters
 - Network Filters
-- HTTP Filters
+- HTTP Filters (Why http? http is most popular protocol for web services nowadays)
 
 Ref:
 - [Extending Envoy for custom use cases](https://www.envoyproxy.io/docs/envoy/latest/extending/extending)
@@ -13,8 +13,8 @@ Ref:
 Now, I'm using the exmaple from Envoy official project to demo how to write and build custom Envoy filter on Mac and Ubuntu. Later, I'll come out with other use cases of custom Envoy filters. If you want to run the compiled Envoy in Docker container, I suggest writing and building Envoy filter on Linux. 
 
 ### Prerequisites for Mac Developers
-* App Store: Xcode
-* Homebrew: coreutils wget cmake libtool go bazel automake ninja clang-format autoconf aspell
+* Xcode (from App Store)
+* coreutils wget cmake libtool go bazel automake ninja clang-format autoconf aspell (from Homebrew)
 
 Ref:
 - [cMake](https://formulae.brew.sh/formula/cmake)
@@ -119,3 +119,16 @@ $ docker run -d \
       --log-opt max-file=5 \
       alantai/prj-envoy-v3:atai-envoy-v0.0.0
 ```
+
+## MIS
+
+[File of defining rbe_linux_clang_platform](https://github.com/envoyproxy/envoy-build-tools/blob/main/toolchains/BUILD)
+[build preconfiguration (including platform definitions)](https://github.com/istio/proxy/blob/master/envoy.bazelrc)
+[Platforms](https://github.com/bazelbuild/bazel/blob/0.13.0/tools/platforms/BUILD)
+
+
+### Termonology
+* rbe => remote build execution
+* asan => [Address Sanitizer](https://firefox-source-docs.mozilla.org/tools/sanitizer/asan.html)
+* msan => [Memory Sanitizer](https://firefox-source-docs.mozilla.org/tools/sanitizer/memory_sanitizer.html)
+* tsan => [Thread Sanitizer](https://firefox-source-docs.mozilla.org/tools/sanitizer/tsan.html)
